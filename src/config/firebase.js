@@ -12,24 +12,30 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Attempt to read from the local file first, then fall back to env var
 let serviceAccount = null;
-const localKeyPath = path.join(__dirname, '..', 'firebaseadmin.json');
 
-try {
-    if (fs.existsSync(localKeyPath)) {
-        serviceAccount = JSON.parse(fs.readFileSync(localKeyPath, 'utf8'));
-    } else if (process.env.FIREBASE_SERVICE_ACCOUNT && !process.env.FIREBASE_SERVICE_ACCOUNT.includes('Your-Private-Key')) {
-        serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
+if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+    serviceAccount = {
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n")
+    };
+} else {
+    // Fallback to local JSON file for local development if env vars are missing
+    const localKeyPath = path.join(__dirname, '..', 'firebaseadmin.json');
+    try {
+        if (fs.existsSync(localKeyPath)) {
+            serviceAccount = JSON.parse(fs.readFileSync(localKeyPath, 'utf8'));
+        }
+    } catch (error) {
+        console.error('Error reading Firebase Service Account:', error.message);
     }
-} catch (error) {
-    console.error('Error reading Firebase Service Account:', error.message);
 }
 
 if (serviceAccount) {
     initializeApp({
         credential: cert(serviceAccount),
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.project_id}.appspot.com`
+        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.projectId || serviceAccount.project_id}.appspot.com`
     });
 } else {
     // Fallback for default credentials (e.g., deployed environment)
