@@ -27,9 +27,12 @@ export const EmployeeSchema = {
         type: String
     },
     experience: {
-        type: Number
+        type: String
     },
     location: {
+        type: String
+    },
+    preferredLocation: {
         type: String
     },
     expectedSalary: {
@@ -41,6 +44,9 @@ export const EmployeeSchema = {
     openToWork: {
         type: Boolean,
         default: false
+    },
+    gender: {
+        type: String
     },
     resumeId: {
         type: String
