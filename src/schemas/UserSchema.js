@@ -1,6 +1,6 @@
 export const UserSchema = {
     uid: {
-        type: String,
+        type: Number,
         required: true
     },
     email: {

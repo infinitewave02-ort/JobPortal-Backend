@@ -1,6 +1,6 @@
 export const EmployerSchema = {
     uid: {
-        type: String,
+        type: Number,
         required: true
     },
     name: {

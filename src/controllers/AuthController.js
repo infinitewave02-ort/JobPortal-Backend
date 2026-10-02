@@ -31,18 +31,24 @@ export const registerEmployee = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Full Name, Email, and Password are required.' });
         }
 
-        // 1. Create user in Firebase Auth
+        // 1. Get next auto-incrementing ID
+        const nextId = await authService.getNextUserId();
+        const uid = String(nextId);
+
+        // 2. Create user in Firebase Auth with custom ID
         const userRecord = await auth.createUser({
+            uid,
             email,
             password,
             displayName: fullName,
         });
 
         // 2. Save user in Firestore
+        const role = req.body.role || 'employee';
         const userData = {
             fullName,
             email,
-            role: 'employee'
+            role
         };
         const user = await authService.syncUserWithFirestore(userRecord.uid, userData);
 
