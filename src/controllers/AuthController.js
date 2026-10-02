@@ -25,7 +25,12 @@ export const getMe = async (req, res, next) => {
 
 export const registerEmployee = async (req, res, next) => {
     try {
-        const { fullName, email, password } = req.body;
+        const { 
+            fullName, email, password, 
+            jobTitle, experience, qualification, 
+            currentLocation, preferredLocation, 
+            skills, expectedSalary, noticePeriod, gender 
+        } = req.body;
         
         if (!fullName || !email || !password) {
             return res.status(400).json({ success: false, message: 'Full Name, Email, and Password are required.' });
@@ -48,7 +53,16 @@ export const registerEmployee = async (req, res, next) => {
         const userData = {
             fullName,
             email,
-            role
+            role,
+            jobTitle,
+            experience,
+            qualification,
+            currentLocation,
+            preferredLocation,
+            skills,
+            expectedSalary,
+            noticePeriod,
+            gender
         };
         const user = await authService.syncUserWithFirestore(userRecord.uid, userData);
 
