@@ -64,6 +64,13 @@ export const registerEmployee = async (req, res, next) => {
             noticePeriod,
             gender
         };
+        
+        // Remove undefined properties to avoid Firestore errors
+        Object.keys(userData).forEach(key => {
+            if (userData[key] === undefined) {
+                delete userData[key];
+            }
+        });
         const user = await authService.syncUserWithFirestore(userRecord.uid, userData);
 
         return successResponse(res, 201, 'Employee registered successfully', user);
