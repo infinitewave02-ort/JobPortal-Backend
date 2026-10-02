@@ -14,35 +14,56 @@ const __dirname = path.dirname(__filename);
 
 let serviceAccount = null;
 
-if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
+// 1️⃣ Primary: Full JSON string in FIREBASE_SERVICE_ACCOUNT (used in .env and Render)
+if (process.env.FIREBASE_SERVICE_ACCOUNT) {
+    try {
+        const raw = process.env.FIREBASE_SERVICE_ACCOUNT
+            .trim()
+            .replace(/^'|'$/g, '')  // strip surrounding single quotes
+            .replace(/^"|"$/g, ''); // strip surrounding double quotes
+        serviceAccount = JSON.parse(raw);
+        // Ensure the private key has real newlines
+        if (serviceAccount.private_key) {
+            serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, '\n');
+        }
+    } catch (err) {
+        console.error('Failed to parse FIREBASE_SERVICE_ACCOUNT JSON:', err.message);
+    }
+}
+
+// 2️⃣ Fallback: Individual env vars (FIREBASE_PROJECT_ID, etc.)
+if (!serviceAccount && process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY) {
     serviceAccount = {
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
+        privateKey: process.env.FIREBASE_PRIVATE_KEY
+            .replace(/\\n/g, '\n')
+            .replace(/"/g, '')
     };
-} else {
-    // Fallback to local JSON file for local development if env vars are missing
+}
+
+// 3️⃣ Fallback: Local service account JSON file (local dev only)
+if (!serviceAccount) {
     const localKeyPath = path.join(__dirname, '..', 'firebaseadmin.json');
     try {
         if (fs.existsSync(localKeyPath)) {
             serviceAccount = JSON.parse(fs.readFileSync(localKeyPath, 'utf8'));
         }
     } catch (error) {
-        console.error('Error reading Firebase Service Account:', error.message);
+        console.error('Error reading local Firebase Service Account file:', error.message);
     }
 }
 
-if (serviceAccount) {
-    initializeApp({
-        credential: cert(serviceAccount),
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET || `${serviceAccount.projectId || serviceAccount.project_id}.appspot.com`
-    });
-} else {
-    // Fallback for default credentials (e.g., deployed environment)
-    initializeApp({
-        storageBucket: process.env.FIREBASE_STORAGE_BUCKET
-    });
+if (!serviceAccount) {
+    console.error('❌ No Firebase credentials found. Set FIREBASE_SERVICE_ACCOUNT or individual FIREBASE_* env vars.');
+    process.exit(1);
 }
+
+initializeApp({
+    credential: cert(serviceAccount),
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET ||
+        `${serviceAccount.project_id || serviceAccount.projectId}.appspot.com`
+});
 
 export const db = getFirestore();
 export const auth = getAuth();
