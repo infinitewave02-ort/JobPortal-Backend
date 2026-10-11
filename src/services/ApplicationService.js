@@ -31,7 +31,7 @@ export const updateApplicationStatus = async (employerId, applicationId, status)
     const appRef = db.collection('applications').doc(applicationId);
     const doc = await appRef.get();
     if (!doc.exists) throw new Error('Application not found');
-    if (doc.data().employerId !== employerId) throw new Error('Unauthorized');
+    if (String(doc.data().employerId) !== String(employerId)) throw new Error('Unauthorized');
 
     await appRef.update({ status, updatedAt: new Date().toISOString() });
     return { applicationId, status };

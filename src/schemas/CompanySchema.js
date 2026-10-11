@@ -1,10 +1,10 @@
 export const CompanySchema = {
     companyId: {
-        type: String,
+        type: Number,
         required: true
     },
-    ownerId: {
-        type: String,
+    userId: {
+        type: Number,
         required: true
     },
     companyName: {

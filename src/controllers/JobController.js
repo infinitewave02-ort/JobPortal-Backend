@@ -3,7 +3,7 @@ import * as jobService from '../services/JobService.js';
 
 export const createJob = async (req, res, next) => {
     try {
-        const employerId = req.user.uid;
+        const employerId = req.user.numericId || req.user.userId || req.user.uid;
         const job = await jobService.createJob(employerId, req.body);
         return successResponse(res, 201, 'Job created successfully', job);
     } catch (error) {
@@ -32,7 +32,7 @@ export const getJobById = async (req, res, next) => {
 
 export const updateJob = async (req, res, next) => {
     try {
-        const employerId = req.user.uid;
+        const employerId = req.user.numericId || req.user.userId || req.user.uid;
         const { id } = req.params;
         const job = await jobService.updateJob(employerId, id, req.body);
         return successResponse(res, 200, 'Job updated successfully', job);
@@ -43,7 +43,7 @@ export const updateJob = async (req, res, next) => {
 
 export const deleteJob = async (req, res, next) => {
     try {
-        const employerId = req.user.uid;
+        const employerId = req.user.numericId || req.user.userId || req.user.uid;
         const { id } = req.params;
         await jobService.deleteJob(employerId, id);
         return successResponse(res, 200, 'Job deleted successfully', { id });
@@ -54,7 +54,7 @@ export const deleteJob = async (req, res, next) => {
 
 export const getMyJobs = async (req, res, next) => {
     try {
-        const employerId = req.user.uid;
+        const employerId = req.user.numericId || req.user.userId || req.user.uid;
         const jobs = await jobService.getJobsByEmployer(employerId);
         return successResponse(res, 200, 'Employer jobs fetched successfully', jobs);
     } catch (error) {

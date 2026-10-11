@@ -3,7 +3,17 @@ import * as messageService from '../services/MessageService.js';
 
 export const sendMessage = async (req, res, next) => {
     try {
-        const senderId = req.user.uid;
+        const senderId = req.user?.uid || req.body?.senderId;
+        if (!senderId) {
+            return res.status(400).json({ status: 'error', message: 'Sender ID is required' });
+        }
+        if (!req.body?.receiverId) {
+            return res.status(400).json({ status: 'error', message: 'Receiver ID is required' });
+        }
+        if (!req.body?.message || !String(req.body.message).trim()) {
+            return res.status(400).json({ status: 'error', message: 'Message content is required' });
+        }
+
         const message = await messageService.sendMessage(senderId, req.body);
         return successResponse(res, 201, 'Message sent successfully', message);
     } catch (error) {
@@ -13,8 +23,14 @@ export const sendMessage = async (req, res, next) => {
 
 export const getMessages = async (req, res, next) => {
     try {
-        const userId = req.user.uid;
+        const userId = req.user?.uid || req.query?.currentUserId || req.query?.senderId || req.query?.userId;
         const { userId: otherUserId } = req.params;
+        if (!userId) {
+            return res.status(400).json({ status: 'error', message: 'Current user ID is required' });
+        }
+        if (!otherUserId) {
+            return res.status(400).json({ status: 'error', message: 'Other user ID is required' });
+        }
         const messages = await messageService.getMessages(userId, otherUserId);
         return successResponse(res, 200, 'Messages fetched successfully', messages);
     } catch (error) {
@@ -24,7 +40,10 @@ export const getMessages = async (req, res, next) => {
 
 export const getConversations = async (req, res, next) => {
     try {
-        const userId = req.user.uid;
+        const userId = req.user?.uid || req.query?.userId || req.query?.currentUserId;
+        if (!userId) {
+            return res.status(400).json({ status: 'error', message: 'User ID is required' });
+        }
         const conversations = await messageService.getConversations(userId);
         return successResponse(res, 200, 'Conversations fetched successfully', conversations);
     } catch (error) {
@@ -41,3 +60,4 @@ export const deleteMessage = async (req, res, next) => {
         next(error);
     }
 };
+

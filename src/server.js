@@ -1,11 +1,12 @@
 import express from "express";
-import cors from "cors";
+import cors from "cors"; // Force redeploy
 import dotenv from "dotenv";
 import apiRoutes from "./routes/Index.js";
 import { errorHandler } from "./middleware/ErrorMiddleware.js";
 import { notFoundHandler } from "./middleware/NotFoundMiddleware.js";
 import * as functions from 'firebase-functions';
 import { Readable } from 'stream';
+import { ensureDefaultAdmin } from './services/AdminService.js';
 
 
 dotenv.config();
@@ -46,9 +47,15 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+// Only start the server locally. Firebase Functions will handle the server creation automatically.
+if (!process.env.K_SERVICE && !process.env.FUNCTION_NAME && !process.env.FUNCTIONS_EMULATOR) {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+    ensureDefaultAdmin();
+  });
+} else {
+  ensureDefaultAdmin();
+}
 
 export const api = functions.https.onRequest(app);
 

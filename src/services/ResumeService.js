@@ -24,10 +24,16 @@ export const uploadResume = async (employeeId, file) => {
 
     await docRef.set(resumeData);
 
-    await db.collection('users').doc(String(employeeId)).set(
-        { resumeFile: fileUrl, updatedAt: now },
-        { merge: true }
-    );
+    await Promise.all([
+        db.collection('users').doc(String(employeeId)).set(
+            { resumeFile: fileUrl, updatedAt: now },
+            { merge: true }
+        ),
+        db.collection('employees').doc(String(employeeId)).set(
+            { resumeFile: fileUrl, updatedAt: now },
+            { merge: true }
+        )
+    ]);
 
     return { id: docRef.id, ...resumeData };
 };

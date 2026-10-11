@@ -37,8 +37,8 @@ const employerSchema = Joi.object({
 });
 
 const companySchema = Joi.object({
-  companyId: Joi.string().required(),
-  ownerId: Joi.string().required(),
+  companyId: Joi.alternatives().try(Joi.string(), Joi.number()).required(),
+  userId: Joi.alternatives().try(Joi.string(), Joi.number()).required(),
   companyName: Joi.string().required(),
   logo: Joi.string().uri().optional(),
   description: Joi.string().optional(),

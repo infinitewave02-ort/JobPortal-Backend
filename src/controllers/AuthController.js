@@ -79,12 +79,22 @@ export const registerEmployee = async (req, res, next) => {
             }
         });
         const user = await authService.syncUserWithFirestore(userRecord.uid, userData);
-        console.log(`User saved successfully for ${role}: ${userRecord.uid}`);
+        
+        console.log('\n======================================================');
+        console.log(`✅ EMPLOYEE REGISTERED SUCCESSFULLY!`);
+        console.log(`   UID:         ${userRecord.uid}`);
+        console.log(`   Full Name:   ${fullName}`);
+        console.log(`   Email:       ${email}`);
+        console.log(`   Role:        ${role}`);
+        if (jobTitle) console.log(`   Job Title:   ${jobTitle}`);
+        if (experience) console.log(`   Experience:  ${experience}`);
+        console.log('======================================================\n');
 
         // Capitalize the first letter of the role for the success message
         const roleName = role.charAt(0).toUpperCase() + role.slice(1);
         return successResponse(res, 201, `${roleName} registered successfully`, user);
     } catch (error) {
+        console.error('❌ Employee Registration Failed:', error.message || error);
         next(error);
     }
 };
@@ -94,7 +104,8 @@ export const registerEmployer = async (req, res, next) => {
         const {
             email, password,
             companyName, industryType, contactPerson,
-            companyEmail, contactNumber, companyAddress,
+            companyEmail, contactNumber,
+            companyAddress, address, location,
             role = 'employer'
         } = req.body;
 
@@ -108,8 +119,12 @@ export const registerEmployer = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'Email (or companyEmail) and Password are required.' });
         }
 
-        // 1. Get next auto-incrementing ID
+        const resolvedAddress = address || companyAddress || '';
+        const resolvedLocation = location || '';
+
+        // 1. Get next auto-incrementing ID (number)
         const nextId = await authService.getNextUserId();
+        const numericUid = Number(nextId);
         const uid = String(nextId);
 
         // 2. Create user in Firebase Auth with custom ID
@@ -120,17 +135,21 @@ export const registerEmployer = async (req, res, next) => {
             displayName: contactPerson || companyName,
         });
 
-        // 3. Save user in Firestore
+        // 3. Save user in Firestore with numeric uid & userId (for employer)
         const userData = {
+            uid: numericUid,
+            userId: numericUid,
             email: finalEmail,
             name: contactPerson || companyName,
+            phone: contactNumber,
             role,
             companyName,
             industryType,
             contactPerson,
             companyEmail,
             contactNumber,
-            companyAddress
+            address: resolvedAddress,
+            ...(resolvedLocation ? { location: resolvedLocation } : {})
         };
 
         // Remove undefined properties
@@ -140,10 +159,35 @@ export const registerEmployer = async (req, res, next) => {
             }
         });
 
-        const user = await authService.syncUserWithFirestore(userRecord.uid, userData);
-        console.log(`User saved successfully for ${role}: ${userRecord.uid}`);
+        const user = await authService.syncUserWithFirestore(numericUid, userData);
+        
+        // Also save to companies collection with numeric userId
+        const { updateCompanyProfile } = await import('../services/EmployerService.js');
+        await updateCompanyProfile(numericUid, {
+            userId: numericUid,
+            companyName,
+            industryType,
+            contactPerson,
+            companyEmail,
+            contactNumber,
+            address: resolvedAddress,
+            ...(resolvedLocation ? { location: resolvedLocation } : {})
+        });
+        
+        console.log(`User saved successfully for ${role}: ${numericUid}`);
 
-        return successResponse(res, 201, 'Employer registered successfully', user);
+        return successResponse(res, 201, 'Employer registered successfully', {
+            ...user,
+            uid: numericUid,
+            userId: numericUid,
+            companyName,
+            industryType,
+            contactPerson,
+            companyEmail,
+            contactNumber,
+            address: resolvedAddress,
+            location: resolvedLocation
+        });
     } catch (error) {
         next(error);
     }

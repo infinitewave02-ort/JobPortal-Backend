@@ -73,6 +73,7 @@ if (!serviceAccount) {
 }
 
 export const db = getFirestore();
+db.settings({ ignoreUndefinedProperties: true });
 export const auth = getAuth();
 export const storage = getStorage();
 export { FieldValue };
