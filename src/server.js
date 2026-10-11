@@ -47,15 +47,30 @@ app.use(errorHandler);
 
 const PORT = process.env.PORT || 3000;
 
-// Only start the server locally. Firebase Functions will handle the server creation automatically.
-if (!process.env.K_SERVICE && !process.env.FUNCTION_NAME && !process.env.FUNCTIONS_EMULATOR) {
+// Only start the server locally when executed directly (e.g. node src/server.js).
+// Never start the server or run top-level async work when loaded by Firebase Functions.
+const isCloudRuntime = Boolean(
+  process.env.K_SERVICE ||
+  process.env.FUNCTION_NAME ||
+  process.env.FUNCTION_TARGET ||
+  process.env.FUNCTIONS_CONTROL_API ||
+  process.env.FIREBASE_CONFIG ||
+  process.env.FUNCTIONS_EMULATOR
+);
+
+const isDirectRun = Boolean(
+  process.argv[1] &&
+  (process.argv[1].endsWith('server.js') || process.argv[1].endsWith('server')) &&
+  !isCloudRuntime
+);
+
+if (isDirectRun) {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
-    ensureDefaultAdmin();
+    ensureDefaultAdmin().catch((err) => console.error('ensureDefaultAdmin error:', err?.message || err));
   });
-} else {
-  ensureDefaultAdmin();
 }
 
 export const api = functions.https.onRequest(app);
+
 
